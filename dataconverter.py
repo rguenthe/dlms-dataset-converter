@@ -1,9 +1,10 @@
 import struct
-import numpy
 import time
 
+import numpy
+
 from progressbar import ProgressBar
-from filegenerator import XmlGenerator, JsonGenerator
+from filegenerator import XmlGenerator, JsonGenerator, CsvGenerator
 
 
 def read_binary_file(file, type='d'):
@@ -25,7 +26,7 @@ def read_binary_file(file, type='d'):
 
 class DataConverter(object):
 
-    def __init__(self, in_dir, out_dir, zipfilename=''):
+    def __init__(self, in_dir, out_dir, zipfilename='', serial='00'):
         self.in_dir = in_dir
         self.out_dir = out_dir
         self.zipfilename = zipfilename
@@ -44,6 +45,7 @@ class DataConverter(object):
         self.datapoints = self.get_points() - 1
         self.starttime_unix = self.get_starttime()
         self.progress = ProgressBar(self.datapoints, zipfilename)
+        self.serial = serial
 
     def get_points(self):
         """Return number of datapointlist in the current dataset."""
@@ -83,17 +85,29 @@ class DataConverter(object):
     def get_gps_data(self, fp):
         """Return one line of 'GPGGA' and 'GPRMC' NMEA strings in the given file."""
         gps_data = {}
+        zero_list = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
-        line = fp.readline()
-        while not b'$GPGGA' in line:
+        try:
             line = fp.readline()
+            while not b'$GPGGA' in line:
+                line = fp.readline()
 
-        gpgga_str = line.decode("utf-8")
-        line = fp.readline()
-        gprmc_str = line.decode("utf-8")
+            gpgga_str = line.decode("utf-8")
+            line = fp.readline()
+            gprmc_str = line.decode("utf-8")
 
-        gps_data['GPGGA'] = gpgga_str.split(',')
-        gps_data['GPRMC'] = gprmc_str.split(',')
+            gps_data['GPGGA'] = gpgga_str.split(',')
+            gps_data['GPRMC'] = gprmc_str.split(',')
+
+            if len(gps_data['GPGGA']) < 8:
+                gps_data['GPGGA'] = zero_list
+            if len(gps_data['GPRMC']) < 8:
+                gps_data['GPRMC'] = zero_list
+
+        except Exception as err:
+            print('\nget_gps_data: Error while reading gps data: %s' %(err))
+            gps_data['GPGGA'] = zero_list
+            gps_data['GPRMC'] = zero_list
 
         return gps_data
 
@@ -108,6 +122,8 @@ class DataConverter(object):
             file_gen = JsonGenerator(filename, root='datapoint')
         elif output_format == 'xml':
             file_gen = XmlGenerator(filename, root='datapoint')
+        elif output_format == 'csv':
+            file_gen = CsvGenerator(filename)
         else:
             print('unknown output format "%s"' %(output_format))
             return 1
@@ -121,54 +137,59 @@ class DataConverter(object):
         fp_STOP = open(self.in_dir + '/' + self.files['STOP'])
         fp_GPS = open(self.in_dir + '/' + self.files['GPS'], 'rb')
 
-        tacho_data = read_binary_file(self.in_dir + '/' + self.files['TACHO'], 'i')
-        speed_data = numpy.diff(tacho_data)
-        speed_data = speed_data * 9 # 10Hz sampling, 4 ticks/m, m/s->km/h
+        try:
 
-        # get one complete datapoint and write it to the file
-        for i in range(0, self.datapoints):
+            tacho_data = read_binary_file(self.in_dir + '/' + self.files['TACHO'], 'i')
+            speed_data = numpy.diff(tacho_data)
 
-            self.progress.update(i)
-            data = dict()
+            # get one complete datapoint and write it to the file
+            for i in range(0, self.datapoints):
 
-            data['time'] = self.get_increased_time(i)
-            data['tacho'] = str(tacho_data[i])
-            data['speed'] = str(speed_data[i])
-            data['height'] = '0'
+                self.progress.update(i)
+                data = dict()
 
-            gps_data = self.get_gps_data(fp_GPS)
-            data['direction'] = gps_data['GPRMC'][8]
-            data['gps_y'] = gps_data['GPGGA'][2]
-            data['gps_x'] = gps_data['GPGGA'][4]
-            data['sattelites'] = gps_data['GPGGA'][7]
+                data['serial'] = self.serial
 
-            acc_data = fp_ACC.readline().split(';')
-            data['acc_x'] = acc_data[0].replace(' ','').strip()
-            data['acc_y'] = acc_data[1].replace(' ','').strip()
-            data['acc_z'] = acc_data[2].replace(' ','').strip()
+                data['time'] = self.get_increased_time(i)
+                data['tacho'] = str(tacho_data[i])
+                data['speed'] = str(speed_data[i])
+                data['height'] = '0'
 
-            gyr_data = fp_GYR.readline().split(';')
-            data['gyr_x'] = gyr_data[0].replace(' ','').strip()
-            data['gyr_y'] = gyr_data[1].replace(' ','').strip()
-            data['gyr_z'] = gyr_data[2].replace(' ','').strip()
+                gps_data = self.get_gps_data(fp_GPS)
+                data['direction'] = gps_data['GPRMC'][8]
+                data['gps_lat'] = gps_data['GPGGA'][2]
+                data['gps_long'] = gps_data['GPGGA'][4]
+                data['satellites'] = gps_data['GPGGA'][7]
 
-            mag_data = fp_MAG.readline().split(';')
-            data['mag_x'] = mag_data[0].replace(' ','').strip()
-            data['mag_y'] = mag_data[1].replace(' ','').strip()
-            data['mag_z'] = mag_data[2].replace(' ','').strip()
+                acc_data = fp_ACC.readline().split(';')
+                data['acc_x'] = acc_data[0].replace(' ','').strip()
+                data['acc_y'] = acc_data[1].replace(' ','').strip()
+                data['acc_z'] = acc_data[2].replace(' ','').strip()
 
-            prte_data = fp_PR_TE.readline().split(';')
-            data['temperature'] = prte_data[0].replace(' ','').strip()
-            data['pressure'] = prte_data[1].replace(' ','').strip()
+                gyr_data = fp_GYR.readline().split(';')
+                data['gyr_x'] = gyr_data[0].replace(' ','').strip()
+                data['gyr_y'] = gyr_data[1].replace(' ','').strip()
+                data['gyr_z'] = gyr_data[2].replace(' ','').strip()
 
-            stop_data = fp_STOP.readline().replace(' ','').strip()
-            data['stop'] = str(stop_data)
+                mag_data = fp_MAG.readline().split(';')
+                data['mag_x'] = mag_data[0].replace(' ','').strip()
+                data['mag_y'] = mag_data[1].replace(' ','').strip()
+                data['mag_z'] = mag_data[2].replace(' ','').strip()
 
-            # generate file on-the-fly
-            file_gen.add_entry_list(dict=data)
+                prte_data = fp_PR_TE.readline().split(';')
+                data['temperature'] = prte_data[0].replace(' ','').strip()
+                data['pressure'] = prte_data[1].replace(' ','').strip()
 
-            if i < (self.datapoints - 1):
-                file_gen.add_separator()
+                stop_data = fp_STOP.readline().replace(' ','').strip()
+                data['stop'] = str(stop_data)
+
+                # generate file on-the-fly
+                file_gen.add_entry_list(data=data)
+
+                if i < (self.datapoints - 1):
+                    file_gen.add_separator()
+        except Exception as err:
+            print('\nrun: Error while gathering data: %s' %(err))
 
         fp_GPS.close()
         fp_ACC.close()

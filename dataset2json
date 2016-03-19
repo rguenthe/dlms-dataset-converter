@@ -28,7 +28,7 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('input', metavar='<in dir>', help='directory containing the zip files')
     parser.add_argument('output', metavar='<out dir>', help='directory to which the output files will be saved')
-    parser.add_argument('format', metavar='<out format>', choices=['json', 'xml'], help='output format (json or xml)')
+    parser.add_argument('format', metavar='<out format>', choices=['json', 'xml', 'csv'], help='output format (json or xml)')
     parser.add_argument('--serial', metavar='<serial>', help='serial number of the client of the datasets', default='123456')
 
     args = parser.parse_args()
@@ -39,6 +39,7 @@ def main():
     out_format = args.format
 
     extract_dir = 'tmp'
+    processed_dir = 'processed'
 
     sys.stdout.write('-------------------------------------------------------------\n')
     sys.stdout.write('dataset2json converter\n')
@@ -53,13 +54,14 @@ def main():
 
     files = get_files(input_dir)
     for file in files:
-        zf = zipfile.ZipFile(input_dir + file, 'r')
+        zf = zipfile.ZipFile(input_dir + '/' + file, 'r')
         zf.extractall(extract_dir)
 
-        converter = DataConverter(in_dir=extract_dir, out_dir=output_dir, zipfilename=file)
+        converter = DataConverter(in_dir=extract_dir, out_dir=output_dir, zipfilename=file, serial=serial)
         converter.run(output_format=out_format)
 
         shutil.rmtree(extract_dir)
+        shutil.move(input_dir + '/' + file, processed_dir + '/' + file)
 
     sys.stdout.write('done\n')
 
