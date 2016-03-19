@@ -85,7 +85,7 @@ class DataConverter(object):
     def get_gps_data(self, fp):
         """Return one line of 'GPGGA' and 'GPRMC' NMEA strings in the given file."""
         gps_data = {}
-        zero_list = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        zero_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
         try:
             line = fp.readline()
@@ -99,9 +99,9 @@ class DataConverter(object):
             gps_data['GPGGA'] = gpgga_str.split(',')
             gps_data['GPRMC'] = gprmc_str.split(',')
 
-            if len(gps_data['GPGGA']) < 8:
+            if len(gps_data['GPGGA']) < 10:
                 gps_data['GPGGA'] = zero_list
-            if len(gps_data['GPRMC']) < 8:
+            if len(gps_data['GPRMC']) < 10:
                 gps_data['GPRMC'] = zero_list
 
         except Exception as err:
@@ -138,7 +138,6 @@ class DataConverter(object):
         fp_GPS = open(self.in_dir + '/' + self.files['GPS'], 'rb')
 
         try:
-
             tacho_data = read_binary_file(self.in_dir + '/' + self.files['TACHO'], 'i')
             speed_data = numpy.diff(tacho_data)
 
