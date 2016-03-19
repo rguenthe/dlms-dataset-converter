@@ -9,6 +9,8 @@ class ProgressBar():
         self.info = info
 
     def update(self, value):
+        if self.maxval is 0:
+            self.maxval = 1
         pct = int((value / self.maxval) * 100.0)
         if self._pct != pct:
             self._pct = pct
