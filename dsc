@@ -56,7 +56,8 @@ def main():
     for file in files:
         zf = zipfile.ZipFile(input_dir + '/' + file, 'r')
         zf.extractall(extract_dir)
-
+        zf.close()
+		
         converter = DataConverter(in_dir=extract_dir, out_dir=output_dir, zipfilename=file, serial=serial)
         converter.run(output_format=out_format)
 
