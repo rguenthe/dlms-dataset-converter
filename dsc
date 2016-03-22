@@ -3,13 +3,12 @@
 import argparse
 import sys
 import os
-import zipfile
-import shutil
+import multiprocessing
 
-from dataconverter import DataConverter
+from conversiontask import Worker, ConversionTask
 
 
-def get_files(dir):
+def scan_dir(dir):
     """Return list of files in the given directory."""
     files = []
     if not os.path.exists(dir):
@@ -28,9 +27,10 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('input', metavar='<in dir>', help='directory containing the zip files')
     parser.add_argument('output', metavar='<out dir>', help='directory to which the output files will be saved')
-    parser.add_argument('format', metavar='<out format>', choices=['json', 'xml', 'csv'], help='output format (json or xml)')
-    parser.add_argument('--serial', metavar='<serial>', help='serial number of the client of the datasets', default='123456')
-
+    parser.add_argument('format', metavar='<out format>', choices=['json', 'xml', 'csv'],
+                        help='output format (json or xml)')
+    parser.add_argument('--serial', metavar='<serial>', help='serial number of the client of the datasets',
+                        default='123456')
     args = parser.parse_args()
 
     input_dir = args.input
@@ -38,31 +38,43 @@ def main():
     serial = args.serial
     out_format = args.format
 
-    extract_dir = 'tmp'
-    processed_dir = 'processed'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     sys.stdout.write('-------------------------------------------------------------\n')
-    sys.stdout.write('dataset2json converter\n')
+    sys.stdout.write('DLM dataset converter\n')
     sys.stdout.write('-------------------------------------------------------------\n')
     sys.stdout.write('input dir:     %s\n' % (input_dir))
     sys.stdout.write('output dir:    %s\n' % (output_dir))
-    sys.stdout.write('output format: %s\n' % (out_format))
-    sys.stdout.write('\nstart conversion...\n')
+    sys.stdout.write('output format: %s\n\n' % (out_format))
 
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
+    # Establish communication queues
+    tasks = multiprocessing.JoinableQueue()
 
-    files = get_files(input_dir)
+    # Start workers
+    num_workers = multiprocessing.cpu_count()
+    print('Creating %d workers' % num_workers)
+    workers = [Worker(tasks) for i in range(num_workers)]
+    for w in workers:
+        w.start()
+
+    # Enqueue jobs
+    files = scan_dir(input_dir)
     for file in files:
-        zf = zipfile.ZipFile(input_dir + '/' + file, 'r')
-        zf.extractall(extract_dir)
-        zf.close()
-		
-        converter = DataConverter(in_dir=extract_dir, out_dir=output_dir, zipfilename=file, serial=serial)
-        converter.run(output_format=out_format)
+        tasks.put(
+            ConversionTask(input_file=input_dir+'/'+file,
+                           output_dir=output_dir,
+                           output_format=out_format,
+                           extract_dir='tmp-'+file,
+                           serial=serial)
+        )
 
-        shutil.rmtree(extract_dir)
-        shutil.move(input_dir + '/' + file, processed_dir + '/' + file)
+    # Add a poison pill for each worker
+    for i in range(num_workers):
+        tasks.put(None)
+
+    # Wait for all of the tasks to finish
+    tasks.join()
 
     sys.stdout.write('done\n')
 
