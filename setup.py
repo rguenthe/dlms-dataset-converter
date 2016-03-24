@@ -8,7 +8,7 @@ setup(
     license='MIT',
     author='Richard Guenther',
     author_email='richard.guenther@haw-hamburg.de',
-    description='Converts a zip dataset to a JSON dataset',
+    description='Converts DLM zip datasets to Json/Xml/Csv',
     scripts=['dsc'],
     install_requires=[
         'numpy',
