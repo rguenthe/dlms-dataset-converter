@@ -73,7 +73,6 @@ class DataConverter(object):
     def get_increased_time(self, deci_sec=0):
         """Return time that is increased by X deci seconds starting from the start time of the dataset."""
         decis_remain = int(deci_sec % 10)
-        #decis -= decis_remain
         seconds = int(deci_sec / 10)
 
         time_unix = self.starttime_unix + seconds
@@ -89,7 +88,7 @@ class DataConverter(object):
 
         try:
             line = fp.readline()
-            while not b'$GPGGA' in line:
+            while b'$GPGGA' not in line:
                 line = fp.readline()
 
             gpgga_str = line.decode("utf-8")
