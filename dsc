@@ -41,11 +41,6 @@ def main():
     serial = args.serial
     out_format = args.format
 
-    if not os.path.exists(processed_dir):
-        os.mkdir(processed_dir)
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
-
     sys.stdout.write('-------------------------------------------------------------\n')
     sys.stdout.write('DLM dataset converter\n')
     sys.stdout.write('-------------------------------------------------------------\n')
@@ -55,8 +50,17 @@ def main():
 
     # scan input dir
     files = scan_dir(input_dir)
+    if len(files) is 0:
+        sys.stdout.write('No input files. Exiting\n')
+        return 1
 
-    # Establish communication queues
+    # create output and processed directories
+    if not os.path.exists(processed_dir):
+        os.mkdir(processed_dir)
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+
+    # Establish queue
     tasks = multiprocessing.JoinableQueue()
 
     # Start workers
