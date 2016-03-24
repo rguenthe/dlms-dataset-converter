@@ -22,11 +22,13 @@ def scan_dir(dir):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='dataset2json',
-                                     description='Dataset to Json/Xml Converter: Converts .zip datasets to Json/Xml datasets',
+    parser = argparse.ArgumentParser(prog='dsc',
+                                     description='DLM dataset converter: Converts .zip datasets to Json/Xml/Csv',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('input', metavar='<in dir>', help='directory containing the zip files')
     parser.add_argument('output', metavar='<out dir>', help='directory to which the output files will be saved')
+    parser.add_argument('processed', metavar='<processed dir>',
+                        help='directory to which the processed dataset files will be moved')
     parser.add_argument('format', metavar='<out format>', choices=['json', 'xml', 'csv'],
                         help='output format (json or xml)')
     parser.add_argument('--serial', metavar='<serial>', help='serial number of the client of the datasets',
@@ -35,11 +37,14 @@ def main():
 
     input_dir = args.input
     output_dir = args.output
+    processed_dir = args.processed
     serial = args.serial
     out_format = args.format
 
+    if not os.path.exists(processed_dir):
+        os.mkdir(processed_dir)
     if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+        os.mkdir(output_dir)
 
     sys.stdout.write('-------------------------------------------------------------\n')
     sys.stdout.write('DLM dataset converter\n')
@@ -48,24 +53,31 @@ def main():
     sys.stdout.write('output dir:    %s\n' % (output_dir))
     sys.stdout.write('output format: %s\n\n' % (out_format))
 
+    # scan input dir
+    files = scan_dir(input_dir)
+
     # Establish communication queues
     tasks = multiprocessing.JoinableQueue()
 
     # Start workers
-    num_workers = multiprocessing.cpu_count()
-    print('Creating %d workers' % num_workers)
+    if len(files) < multiprocessing.cpu_count():
+        num_workers = len(files)
+    else:
+        num_workers = multiprocessing.cpu_count()
+
+    print('Starting %d workers' % num_workers)
     workers = [Worker(tasks) for i in range(num_workers)]
     for w in workers:
         w.start()
 
     # Enqueue jobs
-    files = scan_dir(input_dir)
     for file in files:
         tasks.put(
             ConversionTask(input_file=input_dir+'/'+file,
                            output_dir=output_dir,
-                           output_format=out_format,
+                           processed_dir=processed_dir,
                            extract_dir='tmp-'+file,
+                           output_format=out_format,
                            serial=serial)
         )
 
