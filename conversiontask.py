@@ -17,18 +17,21 @@ class ConversionTask(object):
         self.serial = serial
 
     def __call__(self):
-        zf = zipfile.ZipFile(self.input_file, 'r')
-        zf.extractall(self.extract_dir)
-        zf.close()
+        try:
+            zf = zipfile.ZipFile(self.input_file, 'r')
+            zf.extractall(self.extract_dir)
+            zf.close()
 
-        converter = DataConverter(in_dir=self.extract_dir,
-                                  out_dir=self.output_dir,
-                                  zipfilename=os.path.basename(self.input_file),
-                                  serial=self.serial)
-        converter.run(output_format=self.output_format)
+            converter = DataConverter(in_dir=self.extract_dir,
+                                      out_dir=self.output_dir,
+                                      zipfilename=os.path.basename(self.input_file),
+                                      serial=self.serial)
+            converter.run(output_format=self.output_format)
 
-        shutil.rmtree(self.extract_dir)
-        shutil.move(self.input_file, self.processed_dir + '/' + os.path.basename(self.input_file))
+            shutil.rmtree(self.extract_dir)
+            shutil.move(self.input_file, self.processed_dir + '/' + os.path.basename(self.input_file))
+        except Exception as err:
+            print('\nConversionTask: Error while executing conversion task: %s' %(err))
 
         return
 
