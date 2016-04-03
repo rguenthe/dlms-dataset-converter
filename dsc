@@ -11,6 +11,7 @@ from conversiontask import Worker, ConversionTask
 def scan_dir(dir):
     """Return list of files in the given directory."""
     files = []
+    zipfiles = []
     if not os.path.exists(dir):
         raise OSError('Directory "%s" does not exist!' % (dir))
 
@@ -18,7 +19,13 @@ def scan_dir(dir):
         files.extend(filenames)
         break
 
-    return files
+    # only return files with .zip extension
+    for f in files:
+        print(f)
+        if f.endswith('.zip'):
+            zipfiles.append(f)
+
+    return zipfiles
 
 
 def main():
@@ -42,7 +49,7 @@ def main():
     out_format = args.format
 
     sys.stdout.write('-------------------------------------------------------------\n')
-    sys.stdout.write('DLM dataset converter\n')
+    sys.stdout.write('DLMS dataset converter\n')
     sys.stdout.write('-------------------------------------------------------------\n')
     sys.stdout.write('input dir:     %s\n' % (input_dir))
     sys.stdout.write('output dir:    %s\n' % (output_dir))
