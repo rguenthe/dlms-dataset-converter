@@ -21,7 +21,6 @@ def scan_dir(dir):
 
     # only return files with .zip extension
     for f in files:
-        print(f)
         if f.endswith('.zip'):
             zipfiles.append(f)
 
