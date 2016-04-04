@@ -48,10 +48,18 @@ class DataConverter(object):
         self.serial = serial
 
     def get_points(self):
-        """Return number of datapointlist in the current dataset."""
+        """Return number of datapoints in the current dataset."""
         points_tuple = read_binary_file(self.in_dir + '/' + self.files['POINTS'], 'i')
-        datapointlist = points_tuple[0]
-        return datapointlist
+        if points_tuple is not ():
+            datapoints = points_tuple[0]
+        else:
+            # Fallback: estimate number of datapoints by reading number of lines in the tacho file
+            data = read_binary_file(self.in_dir + '/' + self.files['TACHO'], 'i')
+            datapoints = 0
+            for line in data:
+                datapoints += 1
+
+        return datapoints
 
     def get_starttime(self):
         """Return start time for the dataset as string."""
