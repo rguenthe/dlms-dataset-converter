@@ -18,10 +18,10 @@ def read_binary_file(file, type='d'):
     else:
         raise ValueError('type must be either i or d!')
 
-    tuple = struct.unpack(str(num_bytes) + type, data)
+    filecontent = struct.unpack(str(num_bytes) + type, data)
     fp.close()
 
-    return tuple
+    return filecontent
 
 
 class DataConverter(object):
@@ -88,7 +88,7 @@ class DataConverter(object):
 
         try:
             line = fp.readline()
-            while b'$GPGGA' not in line:
+            while b'$GPGGA' not in line and line is not b'':
                 line = fp.readline()
 
             gpgga_str = line.decode("utf-8")
