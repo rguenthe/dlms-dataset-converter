@@ -22,6 +22,13 @@ def read_binary_file(file, type='d'):
     fp.close()
 
     return filecontent
+    
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except Exception:
+        return False
 
 
 class DataConverter(object):
@@ -162,10 +169,22 @@ class DataConverter(object):
                 data['height'] = '0'
 
                 gps_data = self.get_gps_data(fp_GPS)
-                data['direction'] = gps_data['GPRMC'][8]
-                data['gps_lat'] = gps_data['GPGGA'][2]
-                data['gps_long'] = gps_data['GPGGA'][4]
-                data['satellites'] = gps_data['GPGGA'][7]
+                gps_direction = gps_data['GPRMC'][8]
+                gps_lat = gps_data['GPGGA'][2]
+                gps_long = gps_data['GPGGA'][4]
+                gps_sat = gps_data['GPGGA'][7]
+                
+                # check if all values are numeric
+                if (is_number(gps_direction) and is_number(gps_lat) and is_number(gps_long) and is_number(gps_sat)):
+                    data['direction'] = gps_direction
+                    data['gps_lat'] = gps_lat
+                    data['gps_long'] = gps_long
+                    data['satellites'] = gps_sat
+                else:
+                    data['direction'] = '0'
+                    data['gps_lat'] = '0'
+                    data['gps_long'] = '0'
+                    data['satellites'] = '0'
 
                 acc_data = fp_ACC.readline().split(';')
                 data['acc_x'] = acc_data[0].replace(' ','').strip()
