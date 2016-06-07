@@ -4,7 +4,7 @@ import time
 import numpy
 
 from progressbar import ProgressBar
-from filegenerator import XmlGenerator, JsonGenerator, CsvGenerator
+from filegenerator import CsvGenerator
 
 
 def read_binary_file(file, type='d'):
@@ -132,11 +132,7 @@ class DataConverter(object):
 
         self.progress.start()
 
-        if output_format == 'json':
-            file_gen = JsonGenerator(filename, root='datapoint')
-        elif output_format == 'xml':
-            file_gen = XmlGenerator(filename, root='datapoint')
-        elif output_format == 'csv':
+        if output_format == 'csv':
             file_gen = CsvGenerator(filename)
         else:
             print('unknown output format "%s"' %(output_format))
@@ -175,7 +171,7 @@ class DataConverter(object):
                 gps_sat = gps_data['GPGGA'][7]
                 
                 # check if all values are numeric
-                if (is_number(gps_direction) and is_number(gps_lat) and is_number(gps_long) and is_number(gps_sat)):
+                if is_number(gps_direction) and is_number(gps_lat) and is_number(gps_long) and is_number(gps_sat):
                     data['direction'] = gps_direction
                     data['gps_lat'] = gps_lat
                     data['gps_long'] = gps_long

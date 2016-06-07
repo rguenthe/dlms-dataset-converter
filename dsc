@@ -35,8 +35,8 @@ def main():
     parser.add_argument('output', metavar='<out dir>', help='directory to which the output files will be saved')
     parser.add_argument('processed', metavar='<processed dir>',
                         help='directory to which the processed dataset files will be moved')
-    parser.add_argument('format', metavar='<out format>', choices=['json', 'xml', 'csv'],
-                        help='output format (json or xml)')
+    parser.add_argument('format', metavar='<out format>', choices=['csv'],
+                        help='output format: only "csv" is accepted at the moment')
     parser.add_argument('--serial', metavar='<serial>', help='serial number of the client of the datasets',
                         default='123456')
     args = parser.parse_args()
