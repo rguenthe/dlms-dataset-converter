@@ -1,5 +1,6 @@
 import struct
 import time
+import csv
 
 import numpy
 
@@ -8,7 +9,7 @@ from filegenerator import CsvGenerator, MatGenerator
 
 
 def read_binary_file(file, type='d'):
-    """Return content of binary file using double or integer type intepretation."""
+    """Return content of binary file using double or integer type interpretation."""
     fp = open(file, 'rb')
     data = fp.read()
     if type is 'i':
@@ -34,7 +35,7 @@ def is_number(s):
 
 class DataConverter(object):
 
-    def __init__(self, in_dir, out_dir, zipfilename='', serial='00'):
+    def __init__(self, in_dir, out_dir, zipfilename='', logger='0'):
         self.in_dir = in_dir
         self.out_dir = out_dir
         self.zipfilename = zipfilename
@@ -53,7 +54,8 @@ class DataConverter(object):
         self.datapoints = self.get_points() - 1
         self.starttime_unix = self.get_starttime()
         self.progress = ProgressBar(self.datapoints, zipfilename)
-        self.serial = serial
+        self.logger = logger
+        self.busnumfile = 'busnum.csv'
 
     def get_points(self):
         """Return number of datapoints in the current dataset."""
@@ -126,6 +128,20 @@ class DataConverter(object):
 
         return gps_data
 
+    def get_busnum(self):
+        """read bus number from the csv file"""
+
+        dataset_date = self.zipfilename[0:8]
+        logger = 'logger%s' %(self.logger)
+
+        fp_busnum = open(self.busnumfile)
+        reader = csv.DictReader(fp_busnum)
+        for line in reader:
+            if line['date'] == dataset_date:
+                return line[logger]
+
+        return '0'
+
     def run(self, output_format):
         """Convert the dataset into the given output format"""
         datapointlist = list()
@@ -143,13 +159,16 @@ class DataConverter(object):
             tacho_data = read_binary_file(self.in_dir + '/' + self.files['TACHO'], 'i')
             speed_data = numpy.diff(tacho_data) * 4 / 10    # conversion to m/s
 
+            busnum = self.get_busnum()
+
             # get one complete datapoint and write it to the file
             for i in range(0, self.datapoints):
 
                 self.progress.update(i)
                 data = dict()
 
-                data['serial'] = self.serial
+                data['logger'] = self.logger
+                data['busnum'] = busnum
 
                 data['time'] = self.get_increased_time(i)
                 data['tacho'] = str(tacho_data[i])

@@ -12,5 +12,6 @@ setup(
     scripts=['dsc'],
     install_requires=[
         'numpy',
+		'scipy',
     ],
 )

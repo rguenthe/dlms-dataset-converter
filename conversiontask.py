@@ -8,13 +8,13 @@ from dataconverter import DataConverter
 
 class ConversionTask(object):
 
-    def __init__(self, input_file, output_dir, processed_dir, extract_dir, output_format, serial='0'):
+    def __init__(self, input_file, output_dir, processed_dir, extract_dir, output_format, logger='0'):
         self.input_file = input_file
         self.output_dir = output_dir
         self.processed_dir = processed_dir
         self.extract_dir = extract_dir
         self.output_format = output_format
-        self.serial = serial
+        self.logger = logger
 
     def __call__(self):
         try:
@@ -25,7 +25,7 @@ class ConversionTask(object):
             converter = DataConverter(in_dir=self.extract_dir,
                                       out_dir=self.output_dir,
                                       zipfilename=os.path.basename(self.input_file),
-                                      serial=self.serial)
+                                      logger=self.logger)
             converter.run(output_format=self.output_format)
 
             shutil.rmtree(self.extract_dir)

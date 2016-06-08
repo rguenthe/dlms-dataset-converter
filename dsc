@@ -35,16 +35,16 @@ def main():
     parser.add_argument('output', metavar='<out dir>', help='directory to which the output files will be saved')
     parser.add_argument('processed', metavar='<processed dir>',
                         help='directory to which the processed dataset files will be moved')
+    parser.add_argument('logger', metavar='<logger>', help='logger number of the client',
+                        default='0')
     parser.add_argument('format', metavar='<out format>', choices=['csv', 'mat'],
                         help='output format: "csv" or "mat" is accepted')
-    parser.add_argument('--serial', metavar='<serial>', help='serial number of the client of the datasets',
-                        default='123456')
     args = parser.parse_args()
 
     input_dir = args.input
     output_dir = args.output
     processed_dir = args.processed
-    serial = args.serial
+    logger = args.logger
     out_format = args.format
 
     sys.stdout.write('-------------------------------------------------------------\n')
@@ -88,7 +88,7 @@ def main():
                            processed_dir=processed_dir,
                            extract_dir='tmp-'+file,
                            output_format=out_format,
-                           serial=serial)
+                           logger=logger)
         )
 
     # Add a poison pill for each worker
