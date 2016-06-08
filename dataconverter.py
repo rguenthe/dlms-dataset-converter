@@ -26,11 +26,22 @@ def read_binary_file(file, type='d'):
 
 
 def is_number(s):
+    """check if the input is a number"""
     try:
         float(s)
         return True
     except Exception:
         return False
+
+
+def degree_to_decimal(input_degree):
+    """convert coordinates in degree/minute/second to decimal"""
+    degree = float(input_degree)
+    deg = int(degree/100)
+    min = degree - deg*100
+    decimal = deg + min/60
+
+    return decimal
 
 
 class DataConverter(object):
@@ -179,14 +190,14 @@ class DataConverter(object):
                 gps_data = self.get_gps_data(fp_GPS)
                 gps_direction = gps_data['GPRMC'][8]
                 gps_lat = gps_data['GPGGA'][2]
-                gps_long = gps_data['GPGGA'][4]
+                gps_lon = gps_data['GPGGA'][4]
                 gps_sat = gps_data['GPGGA'][7]
                 
                 # check if all values are numeric
-                if is_number(gps_direction) and is_number(gps_lat) and is_number(gps_long) and is_number(gps_sat):
+                if is_number(gps_direction) and is_number(gps_lat) and is_number(gps_lon) and is_number(gps_sat):
                     data['gps_direction'] = gps_direction
-                    data['gps_lat'] = gps_lat
-                    data['gps_lon'] = gps_long
+                    data['gps_lat'] = degree_to_decimal(gps_lat)
+                    data['gps_lon'] = degree_to_decimal(gps_lon)
                     data['gps_satellites'] = gps_sat
                 else:
                     data['gps_direction'] = '0'
