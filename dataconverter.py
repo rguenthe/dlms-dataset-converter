@@ -4,7 +4,7 @@ import time
 import numpy
 
 from progressbar import ProgressBar
-from filegenerator import CsvGenerator
+from filegenerator import CsvGenerator, MatGenerator
 
 
 def read_binary_file(file, type='d'):
@@ -22,7 +22,8 @@ def read_binary_file(file, type='d'):
     fp.close()
 
     return filecontent
-    
+
+
 def is_number(s):
     try:
         float(s)
@@ -79,7 +80,7 @@ class DataConverter(object):
                     str(int(time_tuple[4])) + ':' + \
                     str(int(time_tuple[5]))
 
-        # convert to unix time           
+        # convert to unix time
         time_struct = time.strptime(starttime, '%Y-%m-%d %H:%M:%S')
         starttime_unix = time.mktime(time_struct)
 
@@ -126,19 +127,10 @@ class DataConverter(object):
         return gps_data
 
     def run(self, output_format):
-        """Return keys (string, comma delimited) and list of values (strings, comma delimited) of the dataset."""
-        filename = self.output_prefix + self.zipfilename.replace('zip', output_format)
-        datapointlist = []
+        """Convert the dataset into the given output format"""
+        datapointlist = list()
 
         self.progress.start()
-
-        if output_format == 'csv':
-            file_gen = CsvGenerator(filename)
-        else:
-            print('unknown output format "%s"' %(output_format))
-            return 1
-
-        file_gen.start()
 
         fp_ACC = open(self.in_dir + '/' + self.files['ACC'])
         fp_GYR = open(self.in_dir + '/' + self.files['GYR'])
@@ -149,7 +141,7 @@ class DataConverter(object):
 
         try:
             tacho_data = read_binary_file(self.in_dir + '/' + self.files['TACHO'], 'i')
-            speed_data = numpy.diff(tacho_data)
+            speed_data = numpy.diff(tacho_data) * 4 / 10    # conversion to m/s
 
             # get one complete datapoint and write it to the file
             for i in range(0, self.datapoints):
@@ -164,6 +156,7 @@ class DataConverter(object):
                 data['speed'] = str(speed_data[i])
                 data['height'] = '0'
 
+                # GPS
                 gps_data = self.get_gps_data(fp_GPS)
                 gps_direction = gps_data['GPRMC'][8]
                 gps_lat = gps_data['GPGGA'][2]
@@ -172,15 +165,15 @@ class DataConverter(object):
                 
                 # check if all values are numeric
                 if is_number(gps_direction) and is_number(gps_lat) and is_number(gps_long) and is_number(gps_sat):
-                    data['direction'] = gps_direction
+                    data['gps_direction'] = gps_direction
                     data['gps_lat'] = gps_lat
-                    data['gps_long'] = gps_long
-                    data['satellites'] = gps_sat
+                    data['gps_lon'] = gps_long
+                    data['gps_satellites'] = gps_sat
                 else:
-                    data['direction'] = '0'
+                    data['gps_direction'] = '0'
                     data['gps_lat'] = '0'
-                    data['gps_long'] = '0'
-                    data['satellites'] = '0'
+                    data['gps_lon'] = '0'
+                    data['gps_satellites'] = '0'
 
                 acc_data = fp_ACC.readline().split(';')
                 data['acc_x'] = acc_data[0].replace(' ','').strip()
@@ -204,11 +197,8 @@ class DataConverter(object):
                 stop_data = fp_STOP.readline().replace(' ','').strip()
                 data['stop'] = str(stop_data)
 
-                # generate file on-the-fly
-                file_gen.add_entry_list(data=data)
+                datapointlist.append(data)
 
-                if i < (self.datapoints - 1):
-                    file_gen.add_separator()
         except Exception as err:
             print('\nrun: Error while gathering data: %s' %(err))
 
@@ -219,7 +209,19 @@ class DataConverter(object):
         fp_PR_TE.close()
         fp_STOP.close()
 
+        # generate output file
+        filename = self.output_prefix + self.zipfilename.replace('zip', output_format)
+        if output_format == 'csv':
+            file_gen = CsvGenerator(filename)
+        elif output_format == 'mat':
+            file_gen = MatGenerator(filename)
+        else:
+            print('unknown output format "%s"' % (output_format))
+            return 1
+
+        file_gen.write_data(datapointlist)
         file_gen.finish()
+
         self.progress.finish()
 
         return datapointlist
