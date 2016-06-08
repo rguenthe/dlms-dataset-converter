@@ -1,5 +1,6 @@
 import scipy.io as sio
 import csv
+import re
 
 
 class CsvGenerator(object):
@@ -30,9 +31,10 @@ class MatGenerator(object):
 
     @staticmethod
     def __convert_to_mval(key, value):
-        # convert all strings to float to get 'double' type in mat file (except time)
+        # convert all values to double, convert time string to vector of doubles
         if key is 'time':
-            return value
+            timevec = re.split(r'[-:.\s]', value)
+            return [float(elem) for elem in timevec]
         else:
             return float(value)
 
