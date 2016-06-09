@@ -25,15 +25,6 @@ def read_binary_file(file, type='d'):
     return filecontent
 
 
-def is_number(s):
-    """check if the input is a number"""
-    try:
-        float(s)
-        return True
-    except Exception:
-        return False
-
-
 def degree_to_decimal(input_degree):
     """convert coordinates in degree/minute/second to decimal"""
     degree = float(input_degree)
@@ -127,9 +118,9 @@ class DataConverter(object):
             gps_data['GPGGA'] = gpgga_str.split(',')
             gps_data['GPRMC'] = gprmc_str.split(',')
 
-            if len(gps_data['GPGGA']) < 10:
+            if len(gps_data['GPGGA']) < 15:
                 gps_data['GPGGA'] = zero_list
-            if len(gps_data['GPRMC']) < 10:
+            if len(gps_data['GPRMC']) < 15:
                 gps_data['GPRMC'] = zero_list
 
         except Exception as err:
@@ -140,7 +131,7 @@ class DataConverter(object):
         return gps_data
 
     def get_busnum(self):
-        """read bus number from the csv file"""
+        """read bus number from csv file"""
 
         dataset_date = self.zipfilename[0:8]
         logger = 'logger%s' %(self.logger)
@@ -163,7 +154,7 @@ class DataConverter(object):
         fp_GYR = open(self.in_dir + '/' + self.files['GYR'])
         fp_MAG = open(self.in_dir + '/' + self.files['MAG'])
         fp_PR_TE = open(self.in_dir + '/' + self.files['PR_TE'])
-        fp_STOP = open(self.in_dir + '/' + self.files['STOP'])
+        fp_DOOR = open(self.in_dir + '/' + self.files['STOP'])
         fp_GPS = open(self.in_dir + '/' + self.files['GPS'], 'rb')
 
         try:
@@ -178,32 +169,23 @@ class DataConverter(object):
                 self.progress.update(i)
                 data = dict()
 
-                data['logger'] = self.logger
-                data['busnum'] = busnum
+                data['log_num'] = self.logger
+                data['bus_num'] = busnum
 
-                data['time'] = self.get_increased_time(i)
+                data['abs_time'] = self.get_increased_time(i)
                 data['tacho'] = str(tacho_data[i])
                 data['speed'] = str(speed_data[i])
-                data['height'] = '0'
 
-                # GPS
                 gps_data = self.get_gps_data(fp_GPS)
-                gps_direction = gps_data['GPRMC'][8]
-                gps_lat = gps_data['GPGGA'][2]
-                gps_lon = gps_data['GPGGA'][4]
-                gps_sat = gps_data['GPGGA'][7]
-                
-                # check if all values are numeric
-                if is_number(gps_direction) and is_number(gps_lat) and is_number(gps_lon) and is_number(gps_sat):
-                    data['gps_direction'] = gps_direction
-                    data['gps_lat'] = degree_to_decimal(gps_lat)
-                    data['gps_lon'] = degree_to_decimal(gps_lon)
-                    data['gps_satellites'] = gps_sat
-                else:
-                    data['gps_direction'] = '0'
-                    data['gps_lat'] = '0'
-                    data['gps_lon'] = '0'
-                    data['gps_satellites'] = '0'
+                data['gps_direction'] = gps_data['GPRMC'][8]
+                data['gps_speed'] = gps_data['GPRMC'][7]
+                data['gps_lat'] = degree_to_decimal(gps_data['GPGGA'][2])
+                data['gps_lon'] = degree_to_decimal(gps_data['GPGGA'][4])
+                data['gps_satellites'] = gps_data['GPGGA'][7]
+                data['gps_altitude'] = gps_data['GPGGA'][9]
+                data['gps_hdop'] = gps_data['GPGGA'][8]
+                data['gps_geoid_separation'] = gps_data['GPGGA'][8]
+                data['gps_fix_quality'] = gps_data['GPGGA'][6]
 
                 acc_data = fp_ACC.readline().split(';')
                 data['acc_x'] = acc_data[0].replace(' ','').strip()
@@ -224,8 +206,8 @@ class DataConverter(object):
                 data['temperature'] = prte_data[0].replace(' ','').strip()
                 data['pressure'] = prte_data[1].replace(' ','').strip()
 
-                stop_data = fp_STOP.readline().replace(' ','').strip()
-                data['stop'] = str(stop_data)
+                door_data = fp_DOOR.readline().replace(' ','').strip()
+                data['door'] = str(door_data)
 
                 datapointlist.append(data)
 
@@ -237,7 +219,7 @@ class DataConverter(object):
         fp_GYR.close()
         fp_MAG.close()
         fp_PR_TE.close()
-        fp_STOP.close()
+        fp_DOOR.close()
 
         # generate output file
         filename = self.output_prefix + self.zipfilename.replace('zip', output_format)
