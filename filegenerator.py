@@ -32,7 +32,7 @@ class MatGenerator(object):
     @staticmethod
     def __convert_to_mval(key, value):
         # convert all values to double, convert time string to vector of doubles
-        if key is 'time':
+        if key is 'abs_time':
             timevec = re.split(r'[-:.\s]', value)
             return [float(elem) for elem in timevec]
         else:

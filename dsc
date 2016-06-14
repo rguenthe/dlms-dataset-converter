@@ -13,7 +13,8 @@ def scan_dir(dir):
     files = []
     zipfiles = []
     if not os.path.exists(dir):
-        raise OSError('Directory "%s" does not exist!' % (dir))
+        sys.stdout.write('Directory "%s" does not exist! ' % (dir))
+        return []
 
     for (dirpath, dirnames, filenames) in os.walk(dir):
         files.extend(filenames)
@@ -29,7 +30,7 @@ def scan_dir(dir):
 
 def main():
     parser = argparse.ArgumentParser(prog='dsc',
-                                     description='DLM dataset converter: Converts .zip datasets to Json/Xml/Csv',
+                                     description='BEEDeL dataset converter: Converts .zip datasets to CSV or MAT files',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('input', metavar='<in dir>', help='directory containing the zip files')
     parser.add_argument('output', metavar='<out dir>', help='directory to which the output files will be saved')
@@ -48,16 +49,16 @@ def main():
     out_format = args.format
 
     sys.stdout.write('-------------------------------------------------------------\n')
-    sys.stdout.write('DLMS dataset converter\n')
+    sys.stdout.write('BEEDeL dataset converter\n')
     sys.stdout.write('-------------------------------------------------------------\n')
     sys.stdout.write('input dir:     %s\n' % (input_dir))
     sys.stdout.write('output dir:    %s\n' % (output_dir))
     sys.stdout.write('output format: %s\n\n' % (out_format))
 
-    # scan input dir
+    # scan input directory
     files = scan_dir(input_dir)
     if len(files) is 0:
-        sys.stdout.write('No input files. Exiting\n')
+        sys.stdout.write('No input files! Exiting\n')
         return 1
 
     # create output and processed directories
