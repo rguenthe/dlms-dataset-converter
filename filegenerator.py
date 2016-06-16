@@ -34,15 +34,21 @@ class MatGenerator(object):
         # convert all values to double, convert time string to vector of doubles
         if key is 'abs_time':
             timevec = re.split(r'[-:.\s]', value)
-            return [float(elem) for elem in timevec]
+            mval = [float(elem) for elem in timevec]
         else:
-            return float(value)
+            # return 0 if the value is an empty string
+            if value is '':
+                mval = float(0)
+            else:
+                mval = float(value)
+
+        return mval
 
     def write_data(self, data):
 
         # convert list of datapoint dicts to dict containing value lists
         mdict = dict()
-        fieldnames = [key for (key, value) in sorted(data[1].items())]
+        fieldnames = [key for (key, value) in sorted(data[0].items())]
         for key in fieldnames:
             mdict[key] = list()
 

@@ -1,6 +1,7 @@
 import struct
 import time
 import csv
+import re
 
 import numpy
 
@@ -27,12 +28,28 @@ def read_binary_file(file, type='d'):
 
 def degree_to_decimal(input_degree):
     """convert coordinates in degree/minute/second to decimal"""
-    degree = float(input_degree)
+    try:
+        degree = float(input_degree)
+    except ValueError:
+        degree_str = numeric_str(input_degree)
+        degree = float(degree_str)
+
     deg = int(degree/100)
     min = degree - deg*100
     decimal = deg + min/60
 
-    return decimal
+    return round(decimal, 6)
+
+
+def numeric_str(input_str):
+    """Remove non-numeric characters from the input string if present"""
+    try:
+        float(input_str)
+        ret_str = input_str
+    except ValueError:
+        ret_str = re.sub('[^0-9.]', '', input_str)
+
+    return ret_str
 
 
 class DataConverter(object):
@@ -177,15 +194,15 @@ class DataConverter(object):
                 data['speed'] = str(speed_data[i])
 
                 gps_data = self.get_gps_data(fp_GPS)
-                data['gps_direction'] = gps_data['GPRMC'][8]
-                data['gps_speed'] = gps_data['GPRMC'][7]
+                data['gps_direction'] = numeric_str(gps_data['GPRMC'][8])
+                data['gps_speed'] = numeric_str(gps_data['GPRMC'][7])
                 data['gps_lat'] = degree_to_decimal(gps_data['GPGGA'][2])
                 data['gps_lon'] = degree_to_decimal(gps_data['GPGGA'][4])
-                data['gps_satellites'] = gps_data['GPGGA'][7]
-                data['gps_altitude'] = gps_data['GPGGA'][9]
-                data['gps_hdop'] = gps_data['GPGGA'][8]
-                data['gps_geoid_separation'] = gps_data['GPGGA'][8]
-                data['gps_fix_quality'] = gps_data['GPGGA'][6]
+                data['gps_satellites'] = numeric_str(gps_data['GPGGA'][7])
+                data['gps_altitude'] = numeric_str(gps_data['GPGGA'][9])
+                data['gps_hdop'] = numeric_str(gps_data['GPGGA'][8])
+                data['gps_geoid_separation'] = numeric_str(gps_data['GPGGA'][8])
+                data['gps_fix_quality'] = numeric_str(gps_data['GPGGA'][6])
 
                 acc_data = fp_ACC.readline().split(';')
                 data['acc_x'] = acc_data[0].replace(' ','').strip()
