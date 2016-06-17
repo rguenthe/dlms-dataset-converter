@@ -1,11 +1,9 @@
 import struct
 import time
 import csv
-import traceback
 
 import numpy
 
-from progressbar import ProgressBar
 from filegenerator import CsvGenerator, MatGenerator
 
 
@@ -64,7 +62,6 @@ class DataConverter(object):
         }
         self.datapoints = self.get_points()
         self.starttime_unix = self.get_starttime()
-        self.progress = ProgressBar(self.datapoints, zipfilename)
         self.logger = logger
         self.busnumfile = 'busnum.csv'
 
@@ -128,7 +125,7 @@ class DataConverter(object):
             gprmc_str = line.decode("utf-8")
 
         except Exception as err:
-            print('\nget_gps_data: Error while reading gps data: %s' % (err))
+            print('  error: could not read gps data from %s: %s' % (self.zipfilename, err))
             gpgga_str = gpgga_str_zero
             gprmc_str = gprmc_str_zero
 
@@ -151,7 +148,7 @@ class DataConverter(object):
             gga_sanity_checks['str_length'] = False
 
         if False in gga_sanity_checks.values():
-            print('\nGPGGA string corrupt: %s' % (gpgga_str.strip('\r\n')))
+            print('  warning: corrupt GPGGA string in %s: %s' % (self.zipfilename, gpgga_str.strip('\r\n')))
             gps_data['GPGGA'] = gpgga_str_zero.split(',')
 
         # GPRMC
@@ -163,7 +160,7 @@ class DataConverter(object):
             rmc_sanity_checks['str_length'] = False
 
         if False in rmc_sanity_checks.values():
-            print('\nGPRMC string corrupt: %s' % (gprmc_str.strip('\r\n')))
+            print('  warning: corrupt GPRMC string in %s: %s' % (self.zipfilename, gprmc_str.strip('\r\n')))
             gps_data['GPRMC'] = gprmc_str_zero.split(',')
 
         return gps_data
@@ -186,7 +183,6 @@ class DataConverter(object):
         """Convert the dataset into the given output format"""
         i=0
         datapointlist = list()
-        self.progress.start()
 
         try:
             fp_ACC = open(self.in_dir + '/' + self.src_files['ACC'])
@@ -205,7 +201,6 @@ class DataConverter(object):
             # collect data for one complete datapoint
             for i in range(0, self.datapoints):
 
-                self.progress.update(i)
                 data = dict()
 
                 data['log_num'] = self.logger
@@ -250,16 +245,15 @@ class DataConverter(object):
 
                 datapointlist.append(data)
 
-        except Exception as err:
-            print('\nrun: Error while reading dataset %s at point %d: %s' % (self.zipfilename, i, err))
-            traceback.print_exc(5)
+            fp_GPS.close()
+            fp_ACC.close()
+            fp_GYR.close()
+            fp_MAG.close()
+            fp_PR_TE.close()
+            fp_DOOR.close()
 
-        fp_GPS.close()
-        fp_ACC.close()
-        fp_GYR.close()
-        fp_MAG.close()
-        fp_PR_TE.close()
-        fp_DOOR.close()
+        except Exception as err:
+            print('  error: reading dataset %s failed at point %d: %s' % (self.zipfilename, i, err))
 
         # generate output file
         filename = self.output_prefix + self.zipfilename.replace('zip', output_format)
@@ -268,12 +262,10 @@ class DataConverter(object):
         elif output_format == 'mat':
             file_gen = MatGenerator(filename)
         else:
-            print('unknown output format "%s"' % (output_format))
+            print('  error: unknown output format "%s"' % (output_format))
             return 1
 
         file_gen.write_data(datapointlist)
         file_gen.finish()
-
-        self.progress.finish()
 
         return datapointlist

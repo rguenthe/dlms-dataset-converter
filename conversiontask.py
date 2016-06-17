@@ -2,6 +2,7 @@ import multiprocessing
 import zipfile
 import shutil
 import os.path
+import time
 
 from dataconverter import DataConverter
 
@@ -17,6 +18,7 @@ class ConversionTask(object):
         self.logger = logger
 
     def __call__(self):
+        start_time = time.time()
         try:
             zf = zipfile.ZipFile(self.input_file, 'r')
             zf.extractall(self.extract_dir)
@@ -31,8 +33,10 @@ class ConversionTask(object):
             shutil.rmtree(self.extract_dir)
             shutil.move(self.input_file, self.processed_dir + '/' + os.path.basename(self.input_file))
         except Exception as err:
-            print('\nConversionTask: Error while executing conversion task: %s' %(err))
+            print('  error: executing conversion task of %s failed: %s' %(os.path.basename(self.input_file), err))
 
+        end_time = time.time()
+        print('converted %s to %s (%s sec)' % (os.path.basename(self.input_file), self.output_format, round((end_time - start_time), 2)))
         return
 
 
