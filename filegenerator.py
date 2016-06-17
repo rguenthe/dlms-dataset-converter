@@ -36,16 +36,11 @@ class MatGenerator(object):
             timevec = re.split(r'[-:.\s]', value)
             mval = [float(elem) for elem in timevec]
         else:
-            # return 0 if the value is an empty string
-            if value is '':
-                mval = float(0)
-            else:
-                mval = float(value)
+            mval = float(value)
 
         return mval
 
     def write_data(self, data):
-
         # convert list of datapoint dicts to dict containing value lists
         mdict = dict()
         fieldnames = [key for (key, value) in sorted(data[0].items())]

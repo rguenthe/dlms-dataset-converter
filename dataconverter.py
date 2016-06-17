@@ -1,7 +1,7 @@
 import struct
 import time
 import csv
-import re
+import traceback
 
 import numpy
 
@@ -13,9 +13,9 @@ def read_binary_file(file, type='d'):
     """Return content of binary file using double or integer type interpretation."""
     fp = open(file, 'rb')
     data = fp.read()
-    if type is 'i':
+    if type is 'i': # integer
         num_bytes = int(len(data) / 4)
-    elif type is 'd':
+    elif type is 'd': # double
         num_bytes = int(len(data) / 8)
     else:
         raise ValueError('type must be either i or d!')
@@ -28,28 +28,20 @@ def read_binary_file(file, type='d'):
 
 def degree_to_decimal(input_degree):
     """convert coordinates in degree/minute/second to decimal"""
-    try:
-        degree = float(input_degree)
-    except ValueError:
-        degree_str = numeric_str(input_degree)
-        degree = float(degree_str)
-
-    deg = int(degree/100)
-    min = degree - deg*100
-    decimal = deg + min/60
+    degree_float = float(input_degree)
+    degree = int(degree_float/100)
+    minutes = degree - degree*100
+    decimal = degree + minutes/60
 
     return round(decimal, 6)
 
 
-def numeric_str(input_str):
-    """Remove non-numeric characters from the input string if present"""
+def is_number(s):
     try:
-        float(input_str)
-        ret_str = input_str
-    except ValueError:
-        ret_str = re.sub('[^0-9.]', '', input_str)
-
-    return ret_str
+        float(s)
+        return True
+    except Exception:
+        return False
 
 
 class DataConverter(object):
@@ -59,7 +51,7 @@ class DataConverter(object):
         self.out_dir = out_dir
         self.zipfilename = zipfilename
         self.output_prefix = out_dir + '/' + 'dataset_'
-        self.files = {
+        self.src_files = {
             'ACC': 'ACC.txt',
             'GYR': 'GYR.txt',
             'MAG': 'MAG.txt',
@@ -70,7 +62,7 @@ class DataConverter(object):
             'TIME': 'Time.bin',     # double
             'POINTS': 'POINTS.bin'  # int
         }
-        self.datapoints = self.get_points() - 1
+        self.datapoints = self.get_points()
         self.starttime_unix = self.get_starttime()
         self.progress = ProgressBar(self.datapoints, zipfilename)
         self.logger = logger
@@ -78,12 +70,12 @@ class DataConverter(object):
 
     def get_points(self):
         """Return number of datapoints in the current dataset."""
-        points_tuple = read_binary_file(self.in_dir + '/' + self.files['POINTS'], 'i')
+        points_tuple = read_binary_file(self.in_dir + '/' + self.src_files['POINTS'], 'i')
         if points_tuple is not ():
             datapoints = points_tuple[0]
         else:
             # Fallback: estimate number of datapoints by reading number of lines in the tacho file
-            data = read_binary_file(self.in_dir + '/' + self.files['TACHO'], 'i')
+            data = read_binary_file(self.in_dir + '/' + self.src_files['TACHO'], 'i')
             datapoints = 0
             for line in data:
                 datapoints += 1
@@ -92,7 +84,7 @@ class DataConverter(object):
 
     def get_starttime(self):
         """Return start time for the dataset as string."""
-        time_tuple = read_binary_file(self.in_dir + '/' + self.files['TIME'], 'd')
+        time_tuple = read_binary_file(self.in_dir + '/' + self.src_files['TIME'], 'd')
         # YYYY-MM-DD HH-MM-SS.MS
         starttime = str(int(time_tuple[0])) + '-' + \
                     str(int(time_tuple[1])) + '-' + \
@@ -107,7 +99,7 @@ class DataConverter(object):
 
         return starttime_unix
 
-    def get_increased_time(self, deci_sec=0):
+    def get_timestamp(self, deci_sec=0):
         """Return time that is increased by X deci seconds starting from the start time of the dataset."""
         decis_remain = int(deci_sec % 10)
         seconds = int(deci_sec / 10)
@@ -121,29 +113,58 @@ class DataConverter(object):
     def get_gps_data(self, fp):
         """Return one line of 'GPGGA' and 'GPRMC' NMEA strings in the given file."""
         gps_data = {}
-        zero_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        gpgga_str_zero = '$GPGGA, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0'
+        gprmc_str_zero = '$GPRMC, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0'
 
         try:
+            # read until 'GPGGA' is found
             line = fp.readline()
             while b'$GPGGA' not in line and line is not b'':
                 line = fp.readline()
 
+            # read two lines: GPGGA and GPRMC
             gpgga_str = line.decode("utf-8")
             line = fp.readline()
             gprmc_str = line.decode("utf-8")
 
-            gps_data['GPGGA'] = gpgga_str.split(',')
-            gps_data['GPRMC'] = gprmc_str.split(',')
-
-            if len(gps_data['GPGGA']) < 15:
-                gps_data['GPGGA'] = zero_list
-            if len(gps_data['GPRMC']) < 15:
-                gps_data['GPRMC'] = zero_list
-
         except Exception as err:
-            print('\nget_gps_data: Error while reading gps data: %s' %(err))
-            gps_data['GPGGA'] = zero_list
-            gps_data['GPRMC'] = zero_list
+            print('\nget_gps_data: Error while reading gps data: %s' % (err))
+            gpgga_str = gpgga_str_zero
+            gprmc_str = gprmc_str_zero
+
+        gps_data['GPGGA'] = gpgga_str.split(',')
+        gps_data['GPRMC'] = gprmc_str.split(',')
+
+        # sanity checks on NMEA strings
+        # GPGGA
+        gga_sanity_checks = dict()
+        if len(gps_data['GPGGA']) is 15:
+            gga_sanity_checks['gga_time'] = is_number(gps_data['GPGGA'][1])
+            gga_sanity_checks['gga_lat'] = is_number(gps_data['GPGGA'][2])
+            gga_sanity_checks['gga_lon'] = is_number(gps_data['GPGGA'][4])
+            gga_sanity_checks['gga_fix'] = is_number(gps_data['GPGGA'][6])
+            gga_sanity_checks['gga_sat'] = is_number(gps_data['GPGGA'][7])
+            gga_sanity_checks['gga_hdop'] = is_number(gps_data['GPGGA'][8])
+            gga_sanity_checks['gga_alt'] = is_number(gps_data['GPGGA'][9])
+            gga_sanity_checks['gga_geoid_sep'] = is_number(gps_data['GPGGA'][11])
+        else:
+            gga_sanity_checks['str_length'] = False
+
+        if False in gga_sanity_checks.values():
+            print('\nGPGGA string corrupt: %s' % (gpgga_str.strip('\r\n')))
+            gps_data['GPGGA'] = gpgga_str_zero.split(',')
+
+        # GPRMC
+        rmc_sanity_checks = dict()
+        if len(gps_data['GPRMC']) is 13:
+            rmc_sanity_checks['rmc_speed'] = is_number(gps_data['GPGGA'][7])
+            rmc_sanity_checks['rmc_dir'] = is_number(gps_data['GPGGA'][8])
+        else:
+            rmc_sanity_checks['str_length'] = False
+
+        if False in rmc_sanity_checks.values():
+            print('\nGPRMC string corrupt: %s' % (gprmc_str.strip('\r\n')))
+            gps_data['GPRMC'] = gprmc_str_zero.split(',')
 
         return gps_data
 
@@ -163,46 +184,47 @@ class DataConverter(object):
 
     def run(self, output_format):
         """Convert the dataset into the given output format"""
+        i=0
         datapointlist = list()
-
         self.progress.start()
 
-        fp_ACC = open(self.in_dir + '/' + self.files['ACC'])
-        fp_GYR = open(self.in_dir + '/' + self.files['GYR'])
-        fp_MAG = open(self.in_dir + '/' + self.files['MAG'])
-        fp_PR_TE = open(self.in_dir + '/' + self.files['PR_TE'])
-        fp_DOOR = open(self.in_dir + '/' + self.files['STOP'])
-        fp_GPS = open(self.in_dir + '/' + self.files['GPS'], 'rb')
-
         try:
-            tacho_data = read_binary_file(self.in_dir + '/' + self.files['TACHO'], 'i')
-            speed_data = numpy.diff(tacho_data) * 4 / 10    # conversion to m/s
+            fp_ACC = open(self.in_dir + '/' + self.src_files['ACC'])
+            fp_GYR = open(self.in_dir + '/' + self.src_files['GYR'])
+            fp_MAG = open(self.in_dir + '/' + self.src_files['MAG'])
+            fp_PR_TE = open(self.in_dir + '/' + self.src_files['PR_TE'])
+            fp_DOOR = open(self.in_dir + '/' + self.src_files['STOP'])
+            fp_GPS = open(self.in_dir + '/' + self.src_files['GPS'], 'rb')
 
-            busnum = self.get_busnum()
+            tacho_data = read_binary_file(self.in_dir + '/' + self.src_files['TACHO'], 'i')
+            speed_ndarray = numpy.diff(tacho_data) * 4 / 10     # conversion to m/s
+            speed_data = speed_ndarray.tolist()                 # convert ndarray to list
+            speed_data.append(0)                                # add 0 at end to match vector lengths
+            busnum_data = self.get_busnum()
 
-            # get one complete datapoint and write it to the file
+            # collect data for one complete datapoint
             for i in range(0, self.datapoints):
 
                 self.progress.update(i)
                 data = dict()
 
                 data['log_num'] = self.logger
-                data['bus_num'] = busnum
+                data['bus_num'] = busnum_data
 
-                data['abs_time'] = self.get_increased_time(i)
+                data['abs_time'] = self.get_timestamp(i)
                 data['tacho'] = str(tacho_data[i])
                 data['speed'] = str(speed_data[i])
 
                 gps_data = self.get_gps_data(fp_GPS)
-                data['gps_direction'] = numeric_str(gps_data['GPRMC'][8])
-                data['gps_speed'] = numeric_str(gps_data['GPRMC'][7])
+                data['gps_direction'] = gps_data['GPRMC'][8]
+                data['gps_speed'] = gps_data['GPRMC'][7]
                 data['gps_lat'] = degree_to_decimal(gps_data['GPGGA'][2])
                 data['gps_lon'] = degree_to_decimal(gps_data['GPGGA'][4])
-                data['gps_satellites'] = numeric_str(gps_data['GPGGA'][7])
-                data['gps_altitude'] = numeric_str(gps_data['GPGGA'][9])
-                data['gps_hdop'] = numeric_str(gps_data['GPGGA'][8])
-                data['gps_geoid_separation'] = numeric_str(gps_data['GPGGA'][8])
-                data['gps_fix_quality'] = numeric_str(gps_data['GPGGA'][6])
+                data['gps_satellites'] = gps_data['GPGGA'][7]
+                data['gps_altitude'] = gps_data['GPGGA'][9]
+                data['gps_hdop'] = gps_data['GPGGA'][8]
+                data['gps_geoid_separation'] = gps_data['GPGGA'][8]
+                data['gps_fix_quality'] = gps_data['GPGGA'][6]
 
                 acc_data = fp_ACC.readline().split(';')
                 data['acc_x'] = acc_data[0].replace(' ','').strip()
@@ -229,7 +251,8 @@ class DataConverter(object):
                 datapointlist.append(data)
 
         except Exception as err:
-            print('\nrun: Error while gathering data: %s' %(err))
+            print('\nrun: Error while reading dataset %s at point %d: %s' % (self.zipfilename, i, err))
+            traceback.print_exc(5)
 
         fp_GPS.close()
         fp_ACC.close()
