@@ -34,6 +34,7 @@ class ConversionTask(object):
             shutil.move(self.input_file, self.processed_dir + '/' + os.path.basename(self.input_file))
         except Exception as err:
             print('  error: executing conversion task of %s failed: %s' %(os.path.basename(self.input_file), err))
+            return
 
         end_time = time.time()
         print('converted %s to %s (%s sec)' % (os.path.basename(self.input_file), self.output_format, round((end_time - start_time), 2)))

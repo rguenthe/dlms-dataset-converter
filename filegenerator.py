@@ -36,7 +36,10 @@ class MatGenerator(object):
             timevec = re.split(r'[-:.\s]', value)
             mval = [float(elem) for elem in timevec]
         else:
-            mval = float(value)
+            try:
+                mval = float(value)
+            except Exception:
+                return 0
 
         return mval
 

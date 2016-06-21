@@ -154,8 +154,8 @@ class DataConverter(object):
         # GPRMC
         rmc_sanity_checks = dict()
         if len(gps_data['GPRMC']) is 13:
-            rmc_sanity_checks['rmc_speed'] = is_number(gps_data['GPGGA'][7])
-            rmc_sanity_checks['rmc_dir'] = is_number(gps_data['GPGGA'][8])
+            rmc_sanity_checks['rmc_speed'] = is_number(gps_data['GPRMC'][7])
+            rmc_sanity_checks['rmc_dir'] = is_number(gps_data['GPRMC'][8])
         else:
             rmc_sanity_checks['str_length'] = False
 
