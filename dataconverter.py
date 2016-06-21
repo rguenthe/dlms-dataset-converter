@@ -25,10 +25,10 @@ def read_binary_file(file, type='d'):
 
 
 def degree_to_decimal(input_degree):
-    """convert coordinates in degree/minute/second to decimal"""
+    """convert coordinates in degree/minute/second to decimal degree"""
     degree_float = float(input_degree)
     degree = int(degree_float/100)
-    minutes = degree - degree*100
+    minutes = degree_float - degree*100
     decimal = degree + minutes/60
 
     return round(decimal, 6)
