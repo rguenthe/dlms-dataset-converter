@@ -193,7 +193,7 @@ class DataConverter(object):
             fp_GPS = open(self.in_dir + '/' + self.src_files['GPS'], 'rb')
 
             tacho_data = read_binary_file(self.in_dir + '/' + self.src_files['TACHO'], 'i')
-            speed_ndarray = numpy.diff(tacho_data) * 4 / 10     # conversion to m/s
+            speed_ndarray = numpy.diff(tacho_data) * 10 / 4     # conversion to m/s
             speed_data = speed_ndarray.tolist()                 # convert ndarray to list
             speed_data.append(0)                                # add 0 at end to match vector lengths
             busnum_data = self.get_busnum()
