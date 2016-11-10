@@ -40,6 +40,8 @@ def main():
                         default='0')
     parser.add_argument('format', metavar='<out format>', choices=['csv', 'mat'],
                         help='output format: "csv" or "mat" is accepted')
+    parser.add_argument('--db', nargs=2,
+                        help='database settings: IP and PORT')
     args = parser.parse_args()
 
     input_dir = args.input
@@ -47,6 +49,7 @@ def main():
     processed_dir = args.processed
     logger = args.logger
     out_format = args.format
+    db_settings = args.db
 
     sys.stdout.write('-------------------------------------------------------------\n')
     sys.stdout.write('BEEDeL dataset converter\n')
@@ -89,7 +92,8 @@ def main():
                            processed_dir=processed_dir,
                            extract_dir='tmp-'+file,
                            output_format=out_format,
-                           logger=logger)
+                           logger=logger,
+                           db=db_settings)
         )
 
     # Add a poison pill for each worker

@@ -96,7 +96,7 @@ class DataConverter(object):
 
         return starttime_unix
 
-    def get_timestamp(self, deci_sec=0):
+    def get_timestamp(self, deci_sec=0, type='str'):
         """Return time that is increased by X deci seconds starting from the start time of the dataset."""
         decis_remain = int(deci_sec % 10)
         seconds = int(deci_sec / 10)
@@ -105,7 +105,10 @@ class DataConverter(object):
         time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time_unix))
         time_str = time_str + '.' + str(decis_remain)
 
-        return time_str
+        if type is 'unix':
+            return int(time_unix)
+        else:
+            return time_str
 
     def get_gps_data(self, fp):
         """Return one line of 'GPGGA' and 'GPRMC' NMEA strings in the given file."""
@@ -207,6 +210,8 @@ class DataConverter(object):
                 data['bus_num'] = busnum_data
 
                 data['abs_time'] = self.get_timestamp(i)
+                data['unix_time'] = self.get_timestamp(i, type='unix')
+
                 data['tacho'] = str(tacho_data[i])
                 data['speed'] = str(speed_data[i])
 
