@@ -10,14 +10,14 @@ from databaseconnector import MongoDBConnector
 
 class ConversionTask(object):
 
-    def __init__(self, input_file, output_dir, processed_dir, extract_dir, output_format, logger='0', db=None):
+    def __init__(self, input_file, output_dir, processed_dir, extract_dir, output_format, logger='0', db_settings={'enabled':False}):
         self.input_file = input_file
         self.output_dir = output_dir
         self.processed_dir = processed_dir
         self.extract_dir = extract_dir
         self.output_format = output_format
         self.logger = logger
-        self.db = db
+        self.db_settings = db_settings
 
     def __call__(self):
         start_time = time.time()
@@ -26,6 +26,7 @@ class ConversionTask(object):
             zf.extractall(self.extract_dir)
             zf.close()
 
+            # data conversion start
             converter = DataConverter(in_dir=self.extract_dir,
                                       out_dir=self.output_dir,
                                       zipfilename=os.path.basename(self.input_file),
@@ -33,8 +34,8 @@ class ConversionTask(object):
             data = converter.run(output_format=self.output_format)
 
             # insert in database if settings were provided (IP and Port)
-            if self.db is not None:
-                dbconnection = MongoDBConnector(self.db[0], int(self.db[1]), 'beedel')
+            if self.db_settings['enabled'] is True:
+                dbconnection = MongoDBConnector(self.db_settings['ip'], self.db_settings['port'], self.db_settings['database'])
                 dbconnection.insert_dataset(data)
 
             shutil.rmtree(self.extract_dir)

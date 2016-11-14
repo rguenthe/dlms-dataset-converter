@@ -32,31 +32,51 @@ def main():
     parser = argparse.ArgumentParser(prog='dsc',
                                      description='BEEDeL dataset converter: Converts .zip datasets to CSV or MAT files',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('input', metavar='<in dir>', help='directory containing the zip files')
-    parser.add_argument('output', metavar='<out dir>', help='directory to which the output files will be saved')
-    parser.add_argument('processed', metavar='<processed dir>',
+    parser.add_argument('in_dir', metavar='<in dir>',
+                        help='directory containing the zip files')
+    parser.add_argument('out_dir', metavar='<out dir>',
+                        help='directory to which the output files will be saved')
+    parser.add_argument('-m','--move_dir', metavar='<move dir>',
                         help='directory to which the processed dataset files will be moved')
-    parser.add_argument('logger', metavar='<logger>', help='logger number of the client',
-                        default='0')
-    parser.add_argument('format', metavar='<out format>', choices=['csv', 'mat'],
+    parser.add_argument('-l', '--logger', metavar='<logger>', default='0',
+                        help='logger number for the input files')
+    parser.add_argument('-o', '--format', metavar='<out format>', choices=['csv', 'mat'], default='csv',
                         help='output format: "csv" or "mat" is accepted')
-    parser.add_argument('--db', nargs=2,
-                        help='database settings: IP and PORT')
+    parser.add_argument('-d', '--dbstore', action='store_true', default=False, dest='db_toggle',
+                        help='insert data into database')
+    parser.add_argument('-i', '--dbip', metavar='<db ip', action='store', default='192.168.10.1', dest='db_ip',
+                        help='IP address of the database')
+    parser.add_argument('-p', '--dbport', metavar='<db port>', action='store', default='27017', dest='db_port',
+                        help='port for the database')
+    parser.add_argument('-n', '--dbname', metavar='<db name>', action='store', default='beedel_data', dest='db_name',
+                        help='name of the database to store the data in')
     args = parser.parse_args()
 
-    input_dir = args.input
-    output_dir = args.output
-    processed_dir = args.processed
+    if args.move_dir is None:
+        args.move_dir = args.in_dir
+
+    print(args)
+
+    input_dir = args.in_dir
+    output_dir = args.out_dir
+    processed_dir = args.move_dir
     logger = args.logger
     out_format = args.format
-    db_settings = args.db
+
+    db_settings = {}
+    db_settings['enabled'] = args.db_toggle
+    db_settings['ip'] = args.db_ip
+    db_settings['port'] = int(args.db_port)
+    db_settings['database'] = str(args.db_name);
 
     sys.stdout.write('-------------------------------------------------------------\n')
     sys.stdout.write('BEEDeL dataset converter\n')
     sys.stdout.write('-------------------------------------------------------------\n')
     sys.stdout.write('input dir:     %s\n' % (input_dir))
     sys.stdout.write('output dir:    %s\n' % (output_dir))
-    sys.stdout.write('output format: %s\n\n' % (out_format))
+    sys.stdout.write('output format: %s\n' % (out_format))
+    sys.stdout.write('logger number: %s\n' % (logger))
+    sys.stdout.write('store in DB:   %s\n\n' % (db_settings['enabled']))
 
     # scan input directory
     files = scan_dir(input_dir)
@@ -93,7 +113,7 @@ def main():
                            extract_dir='tmp-'+file,
                            output_format=out_format,
                            logger=logger,
-                           db=db_settings)
+                           db_settings=db_settings)
         )
 
     # Add a poison pill for each worker
