@@ -269,13 +269,16 @@ class DataConverter(object):
         filename = self.output_prefix + self.zipfilename.replace('zip', output_format)
         if output_format == 'csv':
             file_gen = CsvGenerator(filename)
+            file_gen.write_data(datapointlist)
+            file_gen.finish()
         elif output_format == 'mat':
             file_gen = MatGenerator(filename)
+            file_gen.write_data(datapointlist)
+            file_gen.finish()
+        elif output_format == 'none':
+            pass
         else:
             print('  error: unknown output format "%s"' % (output_format))
             return 1
-
-        file_gen.write_data(datapointlist)
-        file_gen.finish()
 
         return datapointlist

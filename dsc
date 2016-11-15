@@ -39,8 +39,8 @@ def main():
                         help='directory to which the processed dataset files will be moved')
     parser.add_argument('-l', '--logger', metavar='<logger>', default='0',
                         help='logger number for the input files')
-    parser.add_argument('-o', '--format', metavar='<out format>', choices=['csv', 'mat'], default='csv',
-                        help='output format: "csv" or "mat" is accepted')
+    parser.add_argument('-o', '--format', metavar='<out format>', choices=['csv', 'mat', 'none'], default='csv',
+                        help='output format: csv, mat or none is accepted')
     parser.add_argument('-d', '--dbstore', action='store_true', default=False, dest='db_toggle',
                         help='insert data into database')
     parser.add_argument('-i', '--dbip', metavar='<db ip', action='store', default='192.168.10.1', dest='db_ip',
@@ -49,7 +49,7 @@ def main():
                         help='port for the database')
     parser.add_argument('-n', '--dbname', metavar='<db name>', action='store', default='beedel_data', dest='db_name',
                         help='name of the database to store the data in')
-                        
+
     args = parser.parse_args()
 
     if args.move_dir is None:
