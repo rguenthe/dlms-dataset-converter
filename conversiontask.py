@@ -36,7 +36,7 @@ class ConversionTask(object):
             # insert in database if settings were provided (IP and Port)
             if self.db_settings['enabled'] is True:
                 dbconnection = MongoDBConnector(self.db_settings['ip'], self.db_settings['port'], self.db_settings['database'])
-                dbconnection.insert_dataset(data)
+                dbconnection.insert_dataset(datapoints=data, datasetname='l' + self.logger + '_' + os.path.basename(self.input_file))
 
             shutil.rmtree(self.extract_dir)
             shutil.move(self.input_file, self.processed_dir + '/' + os.path.basename(self.input_file))

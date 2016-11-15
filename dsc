@@ -76,7 +76,10 @@ def main():
     sys.stdout.write('output dir:    %s\n' % (output_dir))
     sys.stdout.write('output format: %s\n' % (out_format))
     sys.stdout.write('logger number: %s\n' % (logger))
-    sys.stdout.write('store in DB:   %s\n\n' % (db_settings['enabled']))
+    if db_settings['enabled'] is True:
+        sys.stdout.write('store data in DB:\n')
+        sys.stdout.write('  DB address: %s:%s\n' % (db_settings['ip'], db_settings['port']))
+        sys.stdout.write('  DB name:    %s\n\n' % (db_settings['database']))
 
     # scan input directory
     files = scan_dir(input_dir)
