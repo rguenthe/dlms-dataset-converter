@@ -7,7 +7,6 @@ import multiprocessing
 
 from conversiontask import Worker, ConversionTask
 
-
 def scan_dir(dir):
     """Return list of files in the given directory."""
     files = []
@@ -50,13 +49,11 @@ def main():
                         help='port for the database')
     parser.add_argument('-n', '--dbname', metavar='<db name>', action='store', default='beedel_data', dest='db_name',
                         help='name of the database to store the data in')
+                        
     args = parser.parse_args()
 
     if args.move_dir is None:
         args.move_dir = args.in_dir
-
-    print(args)
-
     input_dir = args.in_dir
     output_dir = args.out_dir
     processed_dir = args.move_dir
@@ -76,6 +73,7 @@ def main():
     sys.stdout.write('output dir:    %s\n' % (output_dir))
     sys.stdout.write('output format: %s\n' % (out_format))
     sys.stdout.write('logger number: %s\n' % (logger))
+
     if db_settings['enabled'] is True:
         sys.stdout.write('store data in DB:\n')
         sys.stdout.write('  DB address: %s:%s\n' % (db_settings['ip'], db_settings['port']))
