@@ -82,18 +82,19 @@ class DataConverter(object):
     def get_starttime(self):
         """Return start time for the dataset as string."""
         time_tuple = read_binary_file(self.in_dir + '/' + self.src_files['TIME'], 'd')
+        time_data = list(time_tuple)
 
         # UTC to GMT+1
         if 'yocto' in self.zipfilename:
-            time_tuple[3] = time_tuple[3] + 1
+            time_data[3] = time_data[3] + 1
 
         # format: YYYY-MM-DD HH-MM-SS.MS
-        starttime = str(int(time_tuple[0])) + '-' + \
-                    str(int(time_tuple[1])) + '-' + \
-                    str(int(time_tuple[2])) + ' ' + \
-                    str(int(time_tuple[3])) + ':' + \
-                    str(int(time_tuple[4])) + ':' + \
-                    str(int(time_tuple[5]))
+        starttime = str(int(time_data[0])) + '-' + \
+                    str(int(time_data[1])) + '-' + \
+                    str(int(time_data[2])) + ' ' + \
+                    str(int(time_data[3])) + ':' + \
+                    str(int(time_data[4])) + ':' + \
+                    str(int(time_data[5]))
 
         # convert to unix time
         time_struct = time.strptime(starttime, '%Y-%m-%d %H:%M:%S')
