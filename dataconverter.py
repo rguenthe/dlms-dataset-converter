@@ -86,7 +86,7 @@ class DataConverter(object):
         # UTC to GMT+1
         if 'yocto' in self.zipfilename:
             time_tuple[3] = time_tuple[3] + 1
-            
+
         # format: YYYY-MM-DD HH-MM-SS.MS
         starttime = str(int(time_tuple[0])) + '-' + \
                     str(int(time_tuple[1])) + '-' + \
@@ -211,47 +211,47 @@ class DataConverter(object):
 
                 data = dict()
 
-                data['log_num'] = self.logger
-                data['bus_num'] = busnum_data
+                data['log_num'] = int(self.logger)
+                data['bus_num'] = int(busnum_data)
 
                 data['abs_time'] = self.get_timestamp(i)
                 data['unix_time'] = self.get_timestamp(i, type='unix')
 
-                data['tacho'] = str(tacho_data[i])
-                data['speed'] = str(speed_data[i])
+                data['tacho'] = int(tacho_data[i])
+                data['speed'] = float(speed_data[i])
 
                 gps_data = self.get_gps_data(fp_GPS)
-                data['gps_direction'] = gps_data['GPRMC'][8]
-                data['gps_speed'] = gps_data['GPRMC'][7]
+                data['gps_direction'] = float(gps_data['GPRMC'][8])
+                data['gps_speed'] = float(gps_data['GPRMC'][7])
                 data['gps_lat'] = degree_to_decimal(gps_data['GPGGA'][2])
                 data['gps_lon'] = degree_to_decimal(gps_data['GPGGA'][4])
-                data['gps_satellites'] = gps_data['GPGGA'][7]
-                data['gps_altitude'] = gps_data['GPGGA'][9]
-                data['gps_hdop'] = gps_data['GPGGA'][8]
-                data['gps_geoid_separation'] = gps_data['GPGGA'][8]
-                data['gps_fix_quality'] = gps_data['GPGGA'][6]
+                data['gps_satellites'] = int(gps_data['GPGGA'][7])
+                data['gps_altitude'] = float(gps_data['GPGGA'][9])
+                data['gps_hdop'] = float(gps_data['GPGGA'][8])
+                data['gps_geoid_separation'] = float(gps_data['GPGGA'][8])
+                data['gps_fix_quality'] = float(gps_data['GPGGA'][6])
 
                 acc_data = fp_ACC.readline().split(';')
-                data['acc_x'] = acc_data[0].replace(' ','').strip()
-                data['acc_y'] = acc_data[1].replace(' ','').strip()
-                data['acc_z'] = acc_data[2].replace(' ','').strip()
+                data['acc_x'] = float(acc_data[0].replace(' ','').strip())
+                data['acc_y'] = float(acc_data[1].replace(' ','').strip())
+                data['acc_z'] = float(acc_data[2].replace(' ','').strip())
 
                 gyr_data = fp_GYR.readline().split(';')
-                data['gyr_x'] = gyr_data[0].replace(' ','').strip()
-                data['gyr_y'] = gyr_data[1].replace(' ','').strip()
-                data['gyr_z'] = gyr_data[2].replace(' ','').strip()
+                data['gyr_x'] = float(gyr_data[0].replace(' ','').strip())
+                data['gyr_y'] = float(gyr_data[1].replace(' ','').strip())
+                data['gyr_z'] = float(gyr_data[2].replace(' ','').strip())
 
                 mag_data = fp_MAG.readline().split(';')
-                data['mag_x'] = mag_data[0].replace(' ','').strip()
-                data['mag_y'] = mag_data[1].replace(' ','').strip()
-                data['mag_z'] = mag_data[2].replace(' ','').strip()
+                data['mag_x'] = float(mag_data[0].replace(' ','').strip())
+                data['mag_y'] = float(mag_data[1].replace(' ','').strip())
+                data['mag_z'] = float(mag_data[2].replace(' ','').strip())
 
                 prte_data = fp_PR_TE.readline().split(';')
-                data['temperature'] = prte_data[0].replace(' ','').strip()
-                data['pressure'] = prte_data[1].replace(' ','').strip()
+                data['temperature'] = float(prte_data[0].replace(' ','').strip())
+                data['pressure'] = float(prte_data[1].replace(' ','').strip())
 
                 door_data = fp_DOOR.readline().replace(' ','').strip()
-                data['door'] = str(door_data)
+                data['door'] = int(door_data)
 
                 datapointlist.append(data)
 

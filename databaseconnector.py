@@ -8,5 +8,5 @@ class MongoDBConnector(object):
         self.db = self.client[str(database_name)]
 
     def insert_dataset(self, data):
-        result = self.db['raw_data'].insert_many(data)
+        result = self.db['datapoints'].insert_many(data)
         return result
